@@ -12,7 +12,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
 
 # --- KONFIGURATSIYA ---
-TOKEN = "8558072414:AAG_wQ152z4tIkbHW47XR8YZfiwtpyLvauo"
+TOKEN = "7653292347:AAGDQePalTqRDxqIIjN9AbBUr54W6aiCjDs"
 TICKER = "XAUUSD=X" # Gold Spot
 ADMIN_ID = 6762465157
 
