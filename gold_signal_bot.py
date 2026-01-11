@@ -83,18 +83,33 @@ def analyze_market(timeframe):
         # BUY LOGIC
         if rsi < 35 and current_price <= fib[0.618] * 1.0005: 
             signal = "BUY 📈"
-            logic_msg = "Mantiq: RSI oversold (haddan tashqari sotilgan) va narx Fibonachchi 0.618 'Golden Zone' darajasida. Analogik tahlil: 'Smart Money' buyurtma bloki shakllanmoqda."
+            logic_msg = (
+                "🧐 **Analogik Tahlil:** Bozor 'Discount' zonasida. Fibonachchi 0.618 (Oltin kesishma) darajasidan qaytish kuzatilmoqda. "
+                "Bu daraja tarixan kuchli qo'llab-quvvatlash zonasi hisoblanadi. RSI indikatori 'Oversold' holatida ekanligi xaridorlar bosimi oshishini bildiradi. "
+                "Smart Money tahliliga ko'ra, bu yerda 'Order Block' shakllangan."
+            )
         elif last_row['EMA20'] > last_row['EMA50'] and prev_row['EMA20'] <= prev_row['EMA50']:
             signal = "BUY 📈"
-            logic_msg = "Mantiq: EMA 20/50 Krossover (Oltin kesishma). Trend yuqoriga o'zgarmoqda."
+            logic_msg = (
+                "🧐 **Analogik Tahlil:** EMA 20 va 50 krossoveri (Oltin kesish) sodir bo'ldi. "
+                "Trend o'zgarishi tahlili bo'yicha, qisqa muddatli trend uzoq muddatli trenddan yuqoriga chiqdi. "
+                "Bu 'Bullish Momentum' (buqalar harakati) boshlanganidan dalolat beradi."
+            )
             
         # SELL LOGIC
         elif rsi > 65 and current_price >= fib[0.382] * 0.9995:
             signal = "SELL 📉"
-            logic_msg = "Mantiq: RSI overbought (haddan tashqari sotib olingan) va narx Fibonachchi 0.382 qarshilik darajasida. Analogik tahlil: Bozor 'Liquidity sweep' qilib qaytish arafasida."
+            logic_msg = (
+                "🧐 **Analogik Tahlil:** Bozor 'Premium' zonasida. Fibonachchi 0.382 (qarshilik) darajasiga yetib keldi. "
+                "RSI indikatori 'Overbought' zonasida bo'lib, xaridorlar kuchi tugayotganini ko'rsatmoqda. "
+                "Analogik tahlil bo'yicha narx 'Liquidity Sweep' (likvidlikni yig'ish) jarayonini yakunlab, pastga qaytishi kutilmoqda."
+            )
         elif last_row['EMA20'] < last_row['EMA50'] and prev_row['EMA20'] >= prev_row['EMA50']:
             signal = "SELL 📉"
-            logic_msg = "Mantiq: EMA 20/50 Krossover. Trend pastga yo'nalmoqda."
+            logic_msg = (
+                "🧐 **Analogik Tahlil:** EMA 20 va 50 krossoveri (Ayiqlar kesishi) sodir bo'ldi. "
+                "Bu trendning pastga qarab o'zgarganini va sotuvchilar ustunlikni o'z qo'liga olganini tasdiqlaydi."
+            )
 
         # TP / SL hisoblash
         atr = float(ta.atr(data['High'], data['Low'], data['Close'], length=14).iloc[-1])
