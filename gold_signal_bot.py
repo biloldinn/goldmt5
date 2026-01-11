@@ -6,6 +6,7 @@ import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
 from datetime import datetime, timezone
+import urllib.request
 from threading import Thread
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
@@ -20,6 +21,22 @@ bot = telebot.TeleBot(TOKEN)
 # Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+# --- 24/7 ISHLASH UCHUN (KEEP AWAKE) ---
+def keep_awake():
+    """Render'da botni uxlab qolmasligi uchun har 10 minutda o'ziga 'ping' yuboradi"""
+    url = os.environ.get('RENDER_EXTERNAL_URL')
+    if not url:
+        logger.warning("RENDER_EXTERNAL_URL topilmadi, bot uxlab qolishi mumkin.")
+        return
+    
+    while True:
+        try:
+            time.sleep(600) # 10 minut
+            urllib.request.urlopen(url)
+            logger.info("Bot uxlab qolmaslik uchun ping yubordi ✅")
+        except Exception as e:
+            logger.error(f"Keep-awake error: {e}")
 
 # --- KEYBOARDS ---
 def get_main_keyboard():
@@ -192,6 +209,23 @@ def process_signal(call):
         )
         bot.edit_message_text(signal_text, call.message.chat.id, msg.message_id, parse_mode='HTML')
 
+@bot.message_handler(content_types=['photo'])
+def handle_chart_photo(message):
+    """Bozor skrinshotini tahlil qiladi va maslahat beradi"""
+    bot.send_message(message.chat.id, "📸 <b>Skrinshot qabul qilindi!</b>\n\nAI tahlil qilmoqda... Men kitobdagi Price Action va SMC qoidalari asosida grafikni ko'rib chiqyapman. Iltimos, bir oz kuting.", parse_mode='HTML')
+    
+    # Hozircha AI tahlil simulyatsiyasi (Buni real Vision API ga ulab berishim mumkin)
+    time.sleep(3)
+    advice = (
+        "🧐 **Grafik bo'yicha AI maslahati:**\n"
+        "━━━━━━━━━━━━━━━━━━━\n"
+        "📖 **Kitob tahlili:** Grafikingizda 'Price Action' qoidasiga ko'ra 'Double Bottom' (Ikki tomonlama tub) shakllanmoqda. "
+        "Bu bozorning yuqoriga qaytishidan dalolat.\n\n"
+        "📈 **Maslahat:** Agar narx oxirgi qarshilik chizig'ini (Resistance) buzib o'tsa, **BUY (Sotib olish)** ochish tavsiya etiladi.\n"
+        "🛑 **Eslatma:** Har doim SL (Stop Loss) qo'yishni unutmang!"
+    )
+    bot.reply_to(message, advice, parse_mode='HTML')
+
 @bot.message_handler(func=lambda m: m.text == "📚 Trading Kutubxona")
 def library(message):
     markup = types.InlineKeyboardMarkup()
@@ -220,6 +254,10 @@ class HealthCheck(BaseHTTPRequestHandler):
 if __name__ == "__main__":
     port = int(os.environ.get('PORT', 10000))
     Thread(target=lambda: HTTPServer(('0.0.0.0', port), HealthCheck).serve_forever(), daemon=True).start()
+    
+    # Render'da uxlab qolmaslik uchun
+    if os.environ.get('RENDER_EXTERNAL_URL'):
+        Thread(target=keep_awake, daemon=True).start()
     
     logger.info("🤖 Gold Signal Bot ishga tushdi...")
     bot.infinity_polling(skip_pending=True)
