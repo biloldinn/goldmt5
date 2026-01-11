@@ -259,5 +259,24 @@ if __name__ == "__main__":
     if os.environ.get('RENDER_EXTERNAL_URL'):
         Thread(target=keep_awake, daemon=True).start()
     
+    # Webhook'ni o'chirish (Conflict xatosini oldini olish uchun)
+    try:
+        logger.info("🧹 Webhook tozalanmoqda...")
+        bot.remove_webhook()
+        time.sleep(1)
+    except Exception as e:
+        logger.warning(f"⚠️ Webhook tozalashda xato: {e}")
+
     logger.info("🤖 Gold Signal Bot ishga tushdi...")
-    bot.infinity_polling(skip_pending=True)
+    
+    # --- CONFLICT BUSTER (Retry loop for 409 errors) ---
+    while True:
+        try:
+            bot.infinity_polling(skip_pending=True, timeout=60, long_polling_timeout=60)
+        except Exception as e:
+            if "Conflict" in str(e):
+                logger.warning("⚠️ Ziddiyat (409) aniqlandi. 5 soniyadan keyin qayta urunib ko'ramiz...")
+                time.sleep(5)
+            else:
+                logger.error(f"❌ Kutilmagan xatolik: {e}")
+                time.sleep(10)
