@@ -5,6 +5,7 @@ import logging
 import yfinance as yf
 import pandas as pd
 import pandas_ta as ta
+from datetime import datetime, timezone
 from threading import Thread
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from telebot import types
@@ -62,8 +63,24 @@ def analyze_market(timeframe):
         interval = mapping.get(timeframe, "15m")
         period = "1d" if timeframe in ["1m", "5m", "15m"] else "5d"
         
+        # 1. Bozor ochiqligini tekshirish (Shanba va Yakshanba dam olish kuni)
+        # Oltin bozori odatda Juma kuni 17:00 EST da yopilib, Yakshanba 18:00 EST da ochiladi.
+        # Biz UTC bo'yicha hisoblaymiz.
+        now = datetime.now(timezone.utc)
+        if now.weekday() == 5: # Shanba
+            return {"status": "CLOSED", "message": "Bugun Shanba - Bozor dam olmoqda. Dushanbadan ishga tushadi. ✅"}
+        if now.weekday() == 6: # Yakshanba
+            return {"status": "CLOSED", "message": "Bugun Yakshanba - Bozor hali ochilmadi. Tez orada ishga tushadi. ✅"}
+
         data = yf.download(TICKER, period=period, interval=interval, progress=False)
         if data.empty: return None
+
+        # 2. Bozor harakatini tekshirish (Volatility)
+        # Agar oxirgi 5 ta sham deyarli bir xil narxda bo'lsa, bozor qotib qolgan (Inactive)
+        if len(data) > 5:
+            last_closes = data['Close'].tail(5)
+            if last_closes.max() == last_closes.min():
+                return {"status": "INACTIVE", "message": "Bozor harakatlanmayapti (Flat). Hozircha signal yo'q. ✅"}
         
         # Indikatorlar
         data['RSI'] = ta.rsi(data['Close'], length=14)
@@ -150,7 +167,15 @@ def process_signal(call):
     
     result = analyze_market(tf_code)
     
-    if not result or result['signal'] == "NEUTRAL":
+    if not result:
+        bot.edit_message_text(f"❌ <b>{tf_name}</b> bo'yicha ma'lumot olishda xatolik yuz berdi.", call.message.chat.id, msg.message_id, parse_mode='HTML')
+        return
+
+    if "status" in result and (result['status'] == "CLOSED" or result['status'] == "INACTIVE"):
+        bot.edit_message_text(f"⚠️ {result['message']}", call.message.chat.id, msg.message_id, parse_mode='HTML')
+        return
+        
+    if result['signal'] == "NEUTRAL":
         bot.edit_message_text(f"❕ <b>{tf_name}</b> zonasida hozircha aniq signal yo'q. Bozor kutilmoqda...", call.message.chat.id, msg.message_id, parse_mode='HTML')
     else:
         signal_text = (
